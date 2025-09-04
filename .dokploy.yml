@@ -1,0 +1,4 @@
+# Force Dokploy to use our optimized Dockerfile instead of nixpacks
+build:
+  type: dockerfile
+  dockerfile: Dockerfile

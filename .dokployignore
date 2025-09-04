@@ -1,0 +1,42 @@
+# Dokploy ignore file - based on .dockerignore but for dokploy deployment
+.dokployignore
+.git
+!.git/HEAD
+!.git/refs
+
+# Development files
+/cover/
+/doc/
+/test/
+/tmp/
+.elixir_ls
+*.log
+*.code-workspace
+.vscode
+.idea
+*.iml
+
+# Build artifacts  
+/_build/
+/deps/
+*.ez
+erl_crash.dump
+npm-debug.log
+
+# Generated assets
+/assets/node_modules/
+/tracker/node_modules/
+/priv/static/cache_manifest.json
+/priv/static/css
+/priv/static/js
+/priv/version.json
+/priv/tracker/js/*.js
+/priv/tracker/verifier/
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
+/priv/geodb/*.mmdb
+/priv/geodb/*.mmdb.gz
+
+# Local development files
+.env
+plausible-report.xml
