@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  plausible_db:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres  
+      - POSTGRES_DB=plausible_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  plausible_events_db:
+    image: clickhouse/clickhouse-server:24.3.3.102-alpine
+    restart: always
+    volumes:
+      - event-data:/var/lib/clickhouse
+      - event-logs:/var/log/clickhouse-server
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  plausible:
+    # Use official Plausible image instead of building from source
+    image: ghcr.io/plausible/community-edition:v2.1.4
+    restart: always
+    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    depends_on:
+      plausible_db:
+        condition: service_healthy
+      plausible_events_db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - BASE_URL=https://your-domain.com
+      - SECRET_KEY_BASE=your-secret-key-base-change-me
+      - DATABASE_URL=postgres://postgres:postgres@plausible_db:5432/plausible_db
+      - CLICKHOUSE_DATABASE_URL=http://plausible_events_db:8123/plausible_events_db
+      - DISABLE_REGISTRATION=invite_only
+      - SMTP_HOST_ADDR=your-smtp-server
+      - SMTP_HOST_PORT=587
+      - SMTP_USER_NAME=your-smtp-user
+      - SMTP_USER_PWD=your-smtp-password
+      - SMTP_HOST_SSL_ENABLED=true
+      - MAILER_EMAIL=your-email@domain.com
+      - MAILER_NAME="Plausible Analytics"
+
+volumes:
+  db-data:
+    driver: local
+  event-data:
+    driver: local
+  event-logs:
+    driver: local

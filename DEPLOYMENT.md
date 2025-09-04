@@ -16,6 +16,31 @@ This guide covers deploying Plausible Analytics using Dokploy with optimized con
 
 ## Quick Start
 
+### Option 1: Simple Deployment (Recommended for limited disk space)
+
+If your server has limited disk space, use the pre-built images:
+
+1. **Use the simple docker-compose:**
+   ```bash
+   # Use docker-compose.simple.yml instead of building from source
+   ```
+
+2. **Configure environment variables in Dokploy:**
+   - `BASE_URL`: Your domain (e.g., https://analytics.yoursite.com) 
+   - `SECRET_KEY_BASE`: Generate a 64-character secret key
+   - SMTP settings for email functionality
+   - Database URLs are pre-configured
+
+3. **Deploy with Dokploy:**
+   - Import this repository into Dokploy
+   - Use `docker-compose.simple.yml` as your compose file
+   - Configure your domain and SSL
+   - Deploy!
+
+### Option 2: Build from Source (Requires more disk space)
+
+For customization or latest features:
+
 1. **Clone and prepare the repository:**
    ```bash
    git clone https://github.com/trevorwang12/analytics.git plausible-analytics
@@ -26,17 +51,12 @@ This guide covers deploying Plausible Analytics using Dokploy with optimized con
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` with your specific values:
-   - `BASE_URL`: Your domain (e.g., https://analytics.yoursite.com)
-   - `SECRET_KEY_BASE`: Generate with `mix phx.gen.secret`
-   - SMTP settings for email functionality
-   - Database URLs (use default if deploying with docker-compose)
+   Edit `.env` with your specific values
 
 3. **Deploy with Dokploy:**
-   - Import this repository into Dokploy
-   - Dokploy will automatically detect the `docker-compose.yml`
+   - Use the main `docker-compose.yml`
+   - Ensure your server has at least 4GB free space
    - Configure your domain and SSL
-   - Deploy!
 
 ## Configuration Details
 
@@ -116,10 +136,22 @@ For high-traffic sites, consider:
 
 ### Common Issues
 
-1. **Database Connection**: Check DATABASE_URL and CLICKHOUSE_DATABASE_URL
-2. **Email Issues**: Verify SMTP credentials and settings  
-3. **Domain Access**: Ensure domain is correctly configured in Dokploy
-4. **Memory Issues**: Increase resource limits if needed
+1. **Disk Space Error** (`No space left on device`):
+   - Use `docker-compose.simple.yml` instead of building from source
+   - Clean up Docker images: `docker system prune -a`
+   - Increase server disk space or use a VPS with more storage
+
+2. **Database Connection**: Check DATABASE_URL and CLICKHOUSE_DATABASE_URL
+
+3. **Email Issues**: Verify SMTP credentials and settings
+
+4. **Domain Access**: Ensure domain is correctly configured in Dokploy
+
+5. **Memory Issues**: Increase resource limits if needed
+
+6. **Build Fails with Elixir Version**: 
+   - Ensure you're using the compatible version (1.17+)
+   - Consider using the pre-built image approach
 
 ### Debug Commands
 
