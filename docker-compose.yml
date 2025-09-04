@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  plausible_db:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=plausible_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  plausible_events_db:
+    image: clickhouse/clickhouse-server:24.3.3.102-alpine
+    restart: always
+    volumes:
+      - event-data:/var/lib/clickhouse
+      - event-logs:/var/log/clickhouse-server
+      - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+      - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  plausible:
+    build: .
+    restart: always
+    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    depends_on:
+      plausible_db:
+        condition: service_healthy
+      plausible_events_db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - BASE_URL=https://your-domain.com
+      - SECRET_KEY_BASE=your-secret-key-base-change-me
+      - DATABASE_URL=postgres://postgres:postgres@plausible_db:5432/plausible_db
+      - CLICKHOUSE_DATABASE_URL=http://plausible_events_db:8123/plausible_events_db
+      - DISABLE_REGISTRATION=invite_only
+      - SMTP_HOST_ADDR=your-smtp-server
+      - SMTP_HOST_PORT=587
+      - SMTP_USER_NAME=your-smtp-user
+      - SMTP_USER_PWD=your-smtp-password
+      - SMTP_HOST_SSL_ENABLED=true
+      - MAILER_EMAIL=your-email@domain.com
+      - MAILER_NAME="Plausible Analytics"
+      - LOG_FAILED_LOGIN_ATTEMPTS=true
+      - GOOGLE_CLIENT_ID=your-google-client-id
+      - GOOGLE_CLIENT_SECRET=your-google-client-secret
+    volumes:
+      - plausible-data:/var/lib/plausible
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  db-data:
+    driver: local
+  event-data:
+    driver: local
+  event-logs:
+    driver: local
+  plausible-data:
+    driver: local

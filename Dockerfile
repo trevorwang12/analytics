@@ -22,19 +22,19 @@ WORKDIR /app
 # install build dependencies
 RUN apk add --no-cache git "nodejs-current=23.2.0-r1" yarn npm python3 ca-certificates wget gnupg make gcc libc-dev brotli
 
-COPY mix.exs ./
-COPY mix.lock ./
+# copy and install elixir dependencies first (better caching)
+COPY mix.exs mix.lock ./
 COPY config ./config
 RUN mix local.hex --force && \
   mix local.rebar --force && \
   mix deps.get --only ${MIX_ENV} && \
   mix deps.compile
 
+# copy and install node dependencies (better caching)
 COPY assets/package.json assets/package-lock.json ./assets/
 COPY tracker/package.json tracker/package-lock.json ./tracker/
-
-RUN npm install --prefix ./assets && \
-  npm install --prefix ./tracker
+RUN npm ci --prefix ./assets --production=false && \
+  npm ci --prefix ./tracker --production=false
 
 COPY assets ./assets
 COPY tracker ./tracker
@@ -79,6 +79,11 @@ RUN mkdir -p /var/lib/plausible && chmod ugo+rw -R /var/lib/plausible
 USER 999
 WORKDIR /app
 ENV LISTEN_IP=0.0.0.0
+
+# add health check for dokploy
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8000/api/health || exit 1
+
 ENTRYPOINT ["/entrypoint.sh"]
 EXPOSE 8000
 ENV DEFAULT_DATA_DIR=/var/lib/plausible

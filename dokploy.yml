@@ -1,0 +1,71 @@
+# Dokploy deployment configuration for Plausible Analytics
+# This file helps Dokploy understand how to deploy your application
+
+version: '1.0'
+
+app:
+  name: plausible-analytics
+  type: docker-compose
+  
+  # Build configuration
+  build:
+    context: .
+    dockerfile: Dockerfile
+    
+  # Environment variables template
+  env_file: .env
+  
+  # Health checks
+  health_check:
+    enabled: true
+    endpoint: /api/health
+    interval: 30s
+    
+  # Deployment settings
+  deployment:
+    strategy: rolling
+    max_surge: 1
+    max_unavailable: 0
+    
+  # Resource limits (adjust based on your needs)
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    requests:
+      memory: 256Mi  
+      cpu: 250m
+      
+  # Persistent volumes
+  volumes:
+    - name: plausible-data
+      mount_path: /var/lib/plausible
+      size: 1Gi
+      
+  # Port configuration
+  ports:
+    - container_port: 8000
+      protocol: tcp
+      
+# Database services
+services:
+  - name: postgres
+    image: postgres:16-alpine
+    env:
+      POSTGRES_DB: plausible_db
+      POSTGRES_USER: postgres  
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - name: postgres-data
+        mount_path: /var/lib/postgresql/data
+        size: 2Gi
+        
+  - name: clickhouse
+    image: clickhouse/clickhouse-server:24.3.3.102-alpine
+    volumes:
+      - name: clickhouse-data
+        mount_path: /var/lib/clickhouse
+        size: 5Gi
+      - name: clickhouse-logs
+        mount_path: /var/log/clickhouse-server
+        size: 1Gi
