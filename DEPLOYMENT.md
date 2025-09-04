@@ -1,6 +1,11 @@
 # Plausible Analytics Deployment Guide for Dokploy
 
-This guide covers deploying Plausible Analytics using Dokploy with the optimized Docker configuration.
+This guide covers deploying Plausible Analytics using Dokploy with optimized configuration.
+
+## Important Notes
+
+- **Elixir Version**: Modified to support Elixir 1.17+ (from original 1.18+ requirement) for Dokploy compatibility
+- **Build System**: Can use either Nixpacks (automatic) or Dockerfile (manual configuration)
 
 ## Prerequisites
 
